@@ -5,13 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import StateSelector from "@/components/StateSelector";
 import CitySelector from "@/components/CitySelector";
 import PriceCard from "@/components/PriceCard";
-import { Fuel, Shield, AlertTriangle, HelpCircle, Activity } from "lucide-react";
-
-interface City {
-  slug: string;
-  name: string;
-  state: string;
-}
+import { Fuel, Shield, AlertTriangle, HelpCircle, Loader2 } from "lucide-react";
 
 interface PriceRow {
   id: number;
@@ -30,8 +24,7 @@ export default function Home() {
   const [selectedCitySlug, setSelectedCitySlug] = useState<string>("");
   const [selectedCityName, setSelectedCityName] = useState<string>("");
   
-  const [currentPrice, setCurrentPrice] = useState<PriceRow | null>(null);
-  const [previousPrice, setPreviousPrice] = useState<PriceRow | undefined>(undefined);
+  const [prices, setPrices] = useState<PriceRow[]>([]);
   
   const [loadingStates, setLoadingStates] = useState<boolean>(true);
   const [loadingCities, setLoadingCities] = useState<boolean>(false);
@@ -74,16 +67,14 @@ export default function Home() {
     if (!selectedState) {
       setCities([]);
       setSelectedCitySlug("");
-      setCurrentPrice(null);
-      setPreviousPrice(undefined);
+      setPrices([]);
       return;
     }
 
     async function fetchCities() {
       setLoadingCities(true);
       setSelectedCitySlug("");
-      setCurrentPrice(null);
-      setPreviousPrice(undefined);
+      setPrices([]);
       setError(null);
       
       try {
@@ -112,8 +103,7 @@ export default function Home() {
   // Fetch prices when city changes
   useEffect(() => {
     if (!selectedCitySlug) {
-      setCurrentPrice(null);
-      setPreviousPrice(undefined);
+      setPrices([]);
       return;
     }
 
@@ -132,17 +122,11 @@ export default function Home() {
           .select("*")
           .eq("city_slug", selectedCitySlug)
           .order("date", { ascending: false })
-          .limit(2);
+          .limit(5); // Fetch up to 5 days (latest + previous 4 days)
 
         if (dbError) throw dbError;
 
-        if (data && data.length > 0) {
-          setCurrentPrice(data[0]);
-          setPreviousPrice(data.length > 1 ? data[1] : undefined);
-        } else {
-          setCurrentPrice(null);
-          setPreviousPrice(undefined);
-        }
+        setPrices(data || []);
       } catch (err: any) {
         console.error("Error fetching prices:", err);
         setError("Failed to fetch fuel prices for the selected city.");
@@ -155,44 +139,39 @@ export default function Home() {
   }, [selectedCitySlug, cities]);
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col justify-between selection:bg-indigo-500/30 selection:text-indigo-200">
-      {/* Background decoration */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[400px] bg-gradient-to-b from-indigo-950/20 via-transparent to-transparent blur-3xl pointer-events-none -z-10" />
-
+    <main className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col justify-between selection:bg-zinc-800 selection:text-zinc-200">
       {/* Container */}
-      <div className="max-w-4xl w-full mx-auto px-4 py-12 md:py-20 flex-grow">
+      <div className="max-w-3xl w-full mx-auto px-4 py-12 md:py-20 flex-grow">
         
         {/* Header */}
-        <div className="text-center mb-12 animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800/80 mb-4 shadow-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        <div className="text-center mb-10 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 mb-4 text-zinc-400 text-xs font-medium">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-zinc-400"></span>
             </span>
-            <span className="text-xs font-semibold text-zinc-300 tracking-wide uppercase">
-              India Fuel Tracker
-            </span>
+            <span>Daily Updates</span>
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-400 bg-clip-text text-transparent flex items-center justify-center gap-3">
-            <Fuel className="w-10 h-10 text-indigo-500" />
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-zinc-100 flex items-center justify-center gap-2.5">
+            <Fuel className="w-8 h-8 text-zinc-300" />
             Fuel Price Tracker
           </h1>
-          <p className="mt-3 text-zinc-400 max-w-md mx-auto text-sm md:text-base font-medium">
-            Daily updated Petrol and Diesel prices across major cities in India, sourced directly from Cardekho.
+          <p className="mt-2.5 text-zinc-400 max-w-sm mx-auto text-xs md:text-sm">
+            Daily updated Petrol and Diesel prices across major cities in India.
           </p>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-sm flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+          <div className="mb-6 p-4 bg-red-950/20 border border-red-900/30 rounded-lg text-red-400 text-xs flex items-start gap-2.5">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
             <p className="font-medium">{error}</p>
           </div>
         )}
 
         {/* Main Controls Card */}
-        <div className="bg-zinc-900/30 border border-zinc-800/60 rounded-2xl p-6 backdrop-blur-md shadow-xl flex flex-col md:flex-row gap-6 items-end">
+        <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 flex flex-col md:flex-row gap-5 items-end">
           <StateSelector
             states={states}
             selectedState={selectedState}
@@ -211,51 +190,50 @@ export default function Home() {
 
         {/* Loading Prices Spinner */}
         {loadingPrices && (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <Activity className="w-8 h-8 text-indigo-500 animate-spin" />
-            <p className="text-sm text-zinc-500 font-medium">Fetching fuel rates...</p>
+          <div className="flex flex-col items-center justify-center py-16 gap-2">
+            <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+            <p className="text-xs text-zinc-500">Fetching fuel rates...</p>
           </div>
         )}
 
         {/* Price Card Results */}
-        {!loadingPrices && currentPrice && (
+        {!loadingPrices && prices.length > 0 && (
           <PriceCard
-            currentPrice={currentPrice}
-            previousPrice={previousPrice}
+            prices={prices}
             cityName={selectedCityName}
           />
         )}
 
         {/* Empty state (when city is selected but no data is in DB) */}
-        {!loadingPrices && selectedCitySlug && !currentPrice && (
-          <div className="mt-8 p-8 bg-zinc-900/20 border border-zinc-800/60 rounded-2xl border-dashed text-center flex flex-col items-center justify-center gap-3">
-            <HelpCircle className="w-10 h-10 text-zinc-600" />
-            <h3 className="font-bold text-zinc-300">No rates available for {selectedCityName}</h3>
-            <p className="text-sm text-zinc-500 max-w-sm">
-              We haven't scraped the prices for this city yet. Ensure your daily scraper cron job has executed or run it manually.
+        {!loadingPrices && selectedCitySlug && prices.length === 0 && (
+          <div className="mt-6 p-8 bg-zinc-900/10 border border-zinc-800 rounded-xl border-dashed text-center flex flex-col items-center justify-center gap-2.5">
+            <HelpCircle className="w-8 h-8 text-zinc-500" />
+            <h3 className="text-sm font-semibold text-zinc-300">No rates available for {selectedCityName}</h3>
+            <p className="text-xs text-zinc-500 max-w-xs">
+              Prices for this city haven't been scraped yet. Please run the daily scraper to fetch rates.
             </p>
           </div>
         )}
 
         {/* Welcome / Instruction state */}
         {!selectedCitySlug && (
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-zinc-400">
-            <div className="p-5 bg-zinc-900/10 border border-zinc-800/40 rounded-xl flex flex-col gap-2">
-              <span className="text-indigo-400 font-semibold text-xs tracking-wider uppercase">Step 1</span>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Choose a State from the dropdown to load its major urban centers.
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-zinc-400 text-xs">
+            <div className="p-4 bg-zinc-900/20 border border-zinc-800 rounded-lg flex flex-col gap-1.5">
+              <span className="text-zinc-400 font-bold uppercase tracking-wider text-[10px]">Step 1</span>
+              <p className="text-zinc-500 leading-relaxed">
+                Choose a State from the dropdown to load its urban centers.
               </p>
             </div>
-            <div className="p-5 bg-zinc-900/10 border border-zinc-800/40 rounded-xl flex flex-col gap-2">
-              <span className="text-indigo-400 font-semibold text-xs tracking-wider uppercase">Step 2</span>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Select a City from the list. We track the top 5–10 locations per state.
+            <div className="p-4 bg-zinc-900/20 border border-zinc-800 rounded-lg flex flex-col gap-1.5">
+              <span className="text-zinc-400 font-bold uppercase tracking-wider text-[10px]">Step 2</span>
+              <p className="text-zinc-500 leading-relaxed">
+                Select a City from the list. We track the major cities in each state.
               </p>
             </div>
-            <div className="p-5 bg-zinc-900/10 border border-zinc-800/40 rounded-xl flex flex-col gap-2">
-              <span className="text-indigo-400 font-semibold text-xs tracking-wider uppercase">Step 3</span>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Analyze today's prices, compare differences, and see update trends.
+            <div className="p-4 bg-zinc-900/20 border border-zinc-800 rounded-lg flex flex-col gap-1.5">
+              <span className="text-zinc-400 font-bold uppercase tracking-wider text-[10px]">Step 3</span>
+              <p className="text-zinc-500 leading-relaxed">
+                Analyze today's prices and view price trends for the past 4 days.
               </p>
             </div>
           </div>
@@ -264,14 +242,14 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="w-full border-t border-zinc-900 py-6 text-center text-xs text-zinc-600">
-        <div className="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 font-medium">
+      <footer className="w-full border-t border-zinc-900/60 py-5 text-center text-[11px] text-zinc-500">
+        <div className="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
             <Shield className="w-3.5 h-3.5 text-zinc-700" />
-            <span>Secure connection via Supabase client direct queries</span>
+            <span>Secure connection via Supabase client</span>
           </div>
           <div>
-            <span>© {new Date().getFullYear()} Fuel Price Tracker. Built with Next.js & Tailwind.</span>
+            <span>© {new Date().getFullYear()} Fuel Price Tracker.</span>
           </div>
         </div>
       </footer>
