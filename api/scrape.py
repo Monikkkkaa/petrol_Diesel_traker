@@ -21,8 +21,8 @@ def generate_mock_prices(city_slug: str) -> list:
     base_diesel = round(random.uniform(84.50, 96.50), 2)
     
     mock_list = []
-    # Use current local date to align with today
-    today = datetime.now().date()
+    # Use yesterday's date as start point to align with Cardekho's update lag
+    today = datetime.now().date() - timedelta(days=1)
     
     # Generate prices for the last 7 days
     for day_offset in range(7):
@@ -97,6 +97,19 @@ def main():
             # Fallback to generating mock prices
             prices = generate_mock_prices(slug)
             is_mock = True
+            
+        if prices:
+            # Ensure today's date exists in the dataset. This handles Cardekho's update delay
+            # by propagating the latest available rate as today's active rate.
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            dates_in_prices = [p["date"] for p in prices]
+            if today_str not in dates_in_prices:
+                latest_entry = prices[0]
+                prices.insert(0, {
+                    "date": today_str,
+                    "petrol_price": latest_entry["petrol_price"],
+                    "diesel_price": latest_entry["diesel_price"]
+                })
             
         try:
             # Prepare rows for upsert

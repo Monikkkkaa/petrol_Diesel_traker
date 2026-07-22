@@ -51,6 +51,19 @@ def main():
             prices = generate_mock_prices(slug)
             is_mock = True
             
+        if prices:
+            # Ensure today's date exists in the dataset. This handles Cardekho's update delay
+            # by propagating the latest available rate as today's active rate.
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            dates_in_prices = [p["date"] for p in prices]
+            if today_str not in dates_in_prices:
+                latest_entry = prices[0]
+                prices.insert(0, {
+                    "date": today_str,
+                    "petrol_price": latest_entry["petrol_price"],
+                    "diesel_price": latest_entry["diesel_price"]
+                })
+            
         try:
             price_rows = [
                 {
