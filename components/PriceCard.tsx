@@ -26,7 +26,7 @@ export default function PriceCard({ prices, cityName }: PriceCardProps) {
   // Calculate delta details
   const getDiffDetails = (curr: number, prev?: number, isTextOnly = false) => {
     if (prev === undefined || prev === null) {
-      return { text: "N/A", color: "text-zinc-400", icon: null };
+      return { text: "", color: "text-zinc-550", icon: null };
     }
     
     const diff = curr - prev;
@@ -178,34 +178,31 @@ export default function PriceCard({ prices, cityName }: PriceCardProps) {
                     {/* Circle Node indicator */}
                     <div className="absolute -left-[30px] top-1.5 w-2 h-2 rounded-full bg-zinc-800 group-hover:bg-zinc-400 transition-colors border border-zinc-950" />
                     
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 text-zinc-400 font-medium text-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      {/* Left Side: Date */}
+                      <div className="flex items-center gap-2 text-zinc-400 font-medium text-sm w-36 shrink-0">
                         <span>{formatDate(hist.date)}</span>
                         <ChevronRight className="w-3 h-3 text-zinc-500" />
                       </div>
                       
-                      {/* Price values for the historical day */}
-                      <div className="flex items-center gap-6 sm:gap-8 text-xs font-bold text-zinc-100">
-                        {/* Petrol */}
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-zinc-500 font-semibold text-[10px] uppercase">Petrol:</span>
-                          <span>₹{Number(hist.petrol_price).toFixed(2)}</span>
-                          {nextHist && (
-                            <span className="text-[10px] font-medium flex items-center">
-                              {pDiff.text}
-                            </span>
-                          )}
+                      {/* Right Side: Aligned Price Grid */}
+                      <div className="flex items-center gap-6 sm:gap-10 text-xs font-bold text-zinc-100 flex-wrap sm:flex-nowrap">
+                        {/* Petrol Column (Fixed widths for perfect alignment) */}
+                        <div className="flex items-center gap-2 w-[160px] shrink-0">
+                          <span className="text-zinc-500 font-semibold text-[10px] uppercase w-12 shrink-0">Petrol:</span>
+                          <span className="w-16 shrink-0">₹{Number(hist.petrol_price).toFixed(2)}</span>
+                          <span className={`w-14 shrink-0 text-[10px] font-medium ${pDiff.color}`}>
+                            {pDiff.text}
+                          </span>
                         </div>
                         
-                        {/* Diesel */}
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-zinc-500 font-semibold text-[10px] uppercase">Diesel:</span>
-                          <span>₹{Number(hist.diesel_price).toFixed(2)}</span>
-                          {nextHist && (
-                            <span className="text-[10px] font-medium flex items-center">
-                              {dDiff.text}
-                            </span>
-                          )}
+                        {/* Diesel Column (Fixed widths for perfect alignment) */}
+                        <div className="flex items-center gap-2 w-[160px] shrink-0">
+                          <span className="text-zinc-500 font-semibold text-[10px] uppercase w-12 shrink-0">Diesel:</span>
+                          <span className="w-16 shrink-0">₹{Number(hist.diesel_price).toFixed(2)}</span>
+                          <span className={`w-14 shrink-0 text-[10px] font-medium ${dDiff.color}`}>
+                            {dDiff.text}
+                          </span>
                         </div>
                       </div>
                     </div>
