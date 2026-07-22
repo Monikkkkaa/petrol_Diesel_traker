@@ -124,7 +124,7 @@ def main():
             ]
             
             # Upsert prices into Supabase
-            supabase.table("fuel_prices").upsert(price_rows).execute()
+            supabase.table("fuel_prices").upsert(price_rows, on_conflict="city_slug,date").execute()
             
             # Update last_scraped_at timestamp for the city
             supabase.table("cities") \

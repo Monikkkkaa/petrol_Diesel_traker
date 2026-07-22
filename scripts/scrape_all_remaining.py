@@ -74,7 +74,7 @@ def main():
                 }
                 for p in prices
             ]
-            supabase.table("fuel_prices").upsert(price_rows).execute()
+            supabase.table("fuel_prices").upsert(price_rows, on_conflict="city_slug,date").execute()
             supabase.table("cities").update({"last_scraped_at": "now()"}).eq("slug", slug).execute()
             
             if is_mock:
